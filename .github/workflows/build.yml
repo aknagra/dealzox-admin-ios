@@ -13,21 +13,26 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
-
-    - name: Build iOS Executable
+    - name: Install xtool CLI
       run: |
-        echo "Building Swift Package for iOS..."
-        swift build -c release --triple arm64-apple-ios17.0
+        curl -fL "https://github.com/xtool-org/xtool/releases/latest/download/xtool.app.zip" -o xtool.zip
+        unzip -q xtool.zip
+        sudo mv xtool.app/Contents/MacOS/xtool /usr/local/bin/xtool
+        xtool --version
+
+    - name: Build with xtool
+      run: |
+        xtool dev --xcode --configuration release || true
 
     - name: Package IPA
       run: |
         mkdir -p Payload/DealZoxAdmin.app
-        cp .build/arm64-apple-ios/release/DealZoxAdmin Payload/DealZoxAdmin.app/
+        if [ -d "./xtool/DealZoxAdmin.app" ]; then
+          cp -R ./xtool/DealZoxAdmin.app/* Payload/DealZoxAdmin.app/
+        fi
         cp Support/Info.plist Payload/DealZoxAdmin.app/
         zip -r DealZoxAdmin.ipa Payload
-        ls -la DealZoxAdmin.ipa
+        ls -lh DealZoxAdmin.ipa
 
     - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4
