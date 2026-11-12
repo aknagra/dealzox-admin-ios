@@ -1,0 +1,37 @@
+name: Build DealZox Admin IPA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+
+    - name: Build iOS Executable
+      run: |
+        echo "Building Swift Package for iOS..."
+        swift build -c release --triple arm64-apple-ios17.0
+
+    - name: Package IPA
+      run: |
+        mkdir -p Payload/DealZoxAdmin.app
+        cp .build/arm64-apple-ios/release/DealZoxAdmin Payload/DealZoxAdmin.app/
+        cp Support/Info.plist Payload/DealZoxAdmin.app/
+        zip -r DealZoxAdmin.ipa Payload
+        ls -la DealZoxAdmin.ipa
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: DealZoxAdmin-iOS-IPA
+        path: DealZoxAdmin.ipa
+        retention-days: 7
